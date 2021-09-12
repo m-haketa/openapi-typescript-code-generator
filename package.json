@@ -58,12 +58,6 @@
     "watch": "yarn ts ./scripts/watch.ts",
     "tsnode": "ts-node -r tsconfig-paths/register"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
-  },
   "config": {
     "commitizen": {
       "path": "cz-conventional-changelog"
