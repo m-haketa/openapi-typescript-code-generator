@@ -27,28 +27,6 @@ const createErrorResponsesTypeAlias = (typeName: string, factory: TsGenerator.Fa
   });
 };
 
-const createSuccessResponsesTypeAlias = (typeName: string, factory: TsGenerator.Factory.Type, errorResponseNames: string[]) => {
-  if (errorResponseNames.length === 0) {
-    return factory.TypeAliasDeclaration.create({
-      export: true,
-      name: typeName,
-      type: ts.factory.createToken(ts.SyntaxKind.VoidKeyword),
-    });
-  }
-  return factory.TypeAliasDeclaration.create({
-    export: true,
-    name: typeName,
-    type: factory.UnionTypeNode.create({
-      typeNodes: errorResponseNames.map(name => {
-        return factory.TypeReferenceNode.create({
-          name,
-        });
-      }),
-    }),
-  });
-};
-
-
 const createSuccessResponseTypeAlias = (typeName: string, factory: TsGenerator.Factory.Type, successResponseNames: string[]) => {
   if (successResponseNames.length === 0) {
     return factory.TypeAliasDeclaration.create({
@@ -201,37 +179,36 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
       type: factory.TypeNode.create({})  
   */
 
-  const createResponsesTypeAlias = (factory: TsGenerator.Factory.Type, responseNames: string[]) => {
+  const responseType = (factory: TsGenerator.Factory.Type, responseNames: string[]) => {
     if (responseNames.length === 0) {
       return ts.factory.createToken(ts.SyntaxKind.VoidKeyword);
     }
 
     const union = factory.UnionTypeNode.create({
-        typeNodes: responseNames.map(name => {
-          return factory.IndexedAccessTypeNode.create({
-            objectType: factory.TypeReferenceNode.create({
+      typeNodes: responseNames.map(name => {
+        return factory.IndexedAccessTypeNode.create({
+          objectType: factory.TypeReferenceNode.create({
+            name,
+          }),
+          indexType: factory.TypeOperatorNode.create({
+            syntaxKind: "keyof",
+            type: factory.TypeReferenceNode.create({
               name,
             }),
-            indexType: factory.TypeOperatorNode.create({
-              syntaxKind: "keyof",
-              type: factory.TypeReferenceNode.create({
-                name,
-              }),
-            }) 
-          }
-          )
-        }),
-      });
+          }),
+        });
+      }),
+    });
 
     return union;
   };
 
-  const generateParams = (factory: TsGenerator.Factory.Type, convertedParams: CodeGenerator.ConvertedParams) => {
+  const parametersType = (factory: TsGenerator.Factory.Type, convertedParams: CodeGenerator.ConvertedParams) => {
     const hasParamsArguments =
-    convertedParams.hasParameter ||
-    convertedParams.hasRequestBody ||
-    convertedParams.has2OrMoreSuccessResponseContentTypes ||
-    convertedParams.has2OrMoreRequestContentTypes;
+      convertedParams.hasParameter ||
+      convertedParams.hasRequestBody ||
+      convertedParams.has2OrMoreSuccessResponseContentTypes ||
+      convertedParams.has2OrMoreRequestContentTypes;
 
     if (!hasParamsArguments) {
       return ts.factory.createToken(ts.SyntaxKind.VoidKeyword);
@@ -239,73 +216,87 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
 
     const typeArguments: ts.TypeNode[] = [];
     if (convertedParams.has2OrMoreRequestContentTypes) {
-      if (convertedParams.requestContentTypes.includes('application/json') ) {
+      if (convertedParams.requestContentTypes.includes("application/json")) {
         typeArguments.push(
           factory.LiteralTypeNode.create({
             value: "application/json",
           }),
         );
       }
-
-      //typeArguments.push(
-      //  factory.UnionTypeNode.create({
-      //    typeNodes: convertedParams.requestContentTypes.map( value => 
-      //      factory.LiteralTypeNode.create({value})
-      //    )
-      //  })
-
-      //typeArguments.push(
-      //  factory.TypeReferenceNode.create({
-      //    name: "RequestContentType",
-      //  }),
-      //);
     }
     if (convertedParams.has2OrMoreSuccessResponseContentTypes) {
       typeArguments.push(
         factory.UnionTypeNode.create({
-          typeNodes: convertedParams.successResponseContentTypes.map( value => 
-            factory.LiteralTypeNode.create({value})
-          )
-        })
+          typeNodes: convertedParams.successResponseContentTypes.map(value => factory.LiteralTypeNode.create({ value })),
+        }),
       );
-
-      //typeArguments.push(
-      //  factory.TypeReferenceNode.create({
-      //    name: "ResponseContentType",
-      //  }),
-      //);
     }
-    return factory.TypeReferenceNode.create({
-        name: convertedParams.argumentParamsTypeDeclaration,
-        typeArguments,
+
+    const paramType = factory.TypeReferenceNode.create({
+      name: convertedParams.argumentParamsTypeDeclaration,
+      typeArguments,
+    });
+
+    return paramType;
+  };
+
+  const responseContentTypes = (factory: TsGenerator.Factory.Type, convertedParams: CodeGenerator.ConvertedParams) => {
+    if (convertedParams.successResponseContentTypes.length === 0) {
+      return ts.factory.createToken(ts.SyntaxKind.VoidKeyword);
+      //return factory.LiteralTypeNode.create({value : ""});
+    }
+
+    return factory.UnionTypeNode.create({
+      typeNodes: convertedParams.successResponseContentTypes.map(value => factory.LiteralTypeNode.create({ value })),
     });
   };
 
-  const ParameterAndResponse = factory.TypeAliasDeclaration.create({
+  const parametersAndResponseNode = (item: CodeGenerator.Params) =>
+    factory.PropertySignature.create({
+      name: item.convertedParams.escapedOperationId,
+      optional: false,
+      type: factory.TypeLiteralNode.create({
+        members: [
+          factory.PropertySignature.create({
+            name: "parameters",
+            optional: false,
+            type: parametersType(factory, item.convertedParams),
+          }),
+          factory.PropertySignature.create({
+            name: "response",
+            optional: false,
+            type: responseType(factory, item.convertedParams.responseSuccessNames),
+          }),
+          factory.PropertySignature.create({
+            name: "method",
+            optional: false,
+            type: factory.LiteralTypeNode.create({
+              value: item.operationParams.httpMethod,
+            }),
+          }),
+          factory.PropertySignature.create({
+            name: "requestUri",
+            optional: false,
+            type: factory.LiteralTypeNode.create({
+              value: item.operationParams.requestUri,
+            }),
+          }),
+          factory.PropertySignature.create({
+            name: "responseContentTypes",
+            optional: false,
+            type: responseContentTypes(factory, item.convertedParams),
+          }),
+        ],
+      }),
+    });
+
+  const APIType = factory.TypeAliasDeclaration.create({
     export: true,
     name: "ParametersAndResponse",
     type: factory.TypeLiteralNode.create({
-      members: list.map(item => factory.PropertySignature.create({
-        name: item.convertedParams.escapedOperationId,
-        optional: false,
-        type: factory.TypeLiteralNode.create({
-          members: [
-            factory.PropertySignature.create({
-              name: 'parameters',
-              optional: false,
-              type: generateParams(factory, item.convertedParams)
-            }),
-            factory.PropertySignature.create({
-              name: 'response',
-              optional: false,
-              type: createResponsesTypeAlias(factory,item.convertedParams.responseSuccessNames)   
-            }),
-          ]
-        })
-      })
-      )
-    })
-  })
+      members: list.map(parametersAndResponseNode),
+    }),
+  });
 
   const returnType = option.sync
     ? factory.TypeReferenceNode.create({
@@ -344,7 +335,7 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
     createObjectLikeInterface(factory),
     ...createQueryParamsDeclarations(factory),
     createSuccessResponseTypeAlias("SuccessResponses", factory, successResponseNames),
-    ParameterAndResponse,
+    APIType,
     errorResponseNamespace,
     factory.InterfaceDeclaration.create({
       export: true,
