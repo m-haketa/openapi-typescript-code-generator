@@ -27,6 +27,28 @@ const createErrorResponsesTypeAlias = (typeName: string, factory: TsGenerator.Fa
   });
 };
 
+const createSuccessResponsesTypeAlias = (typeName: string, factory: TsGenerator.Factory.Type, errorResponseNames: string[]) => {
+  if (errorResponseNames.length === 0) {
+    return factory.TypeAliasDeclaration.create({
+      export: true,
+      name: typeName,
+      type: ts.factory.createToken(ts.SyntaxKind.VoidKeyword),
+    });
+  }
+  return factory.TypeAliasDeclaration.create({
+    export: true,
+    name: typeName,
+    type: factory.UnionTypeNode.create({
+      typeNodes: errorResponseNames.map(name => {
+        return factory.TypeReferenceNode.create({
+          name,
+        });
+      }),
+    }),
+  });
+};
+
+
 const createSuccessResponseTypeAlias = (typeName: string, factory: TsGenerator.Factory.Type, successResponseNames: string[]) => {
   if (successResponseNames.length === 0) {
     return factory.TypeAliasDeclaration.create({
@@ -164,6 +186,90 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
     }),
   });
 
+  /*
+  const successResponseNamespace = factory.Namespace.create({
+    export: true,
+    name: "SuccessResponse",
+    statements: list.map(item => {
+      return createSuccessResponsesTypeAlias(`${item.convertedParams.escapedOperationId}`, factory, item.convertedParams.responseSuccessNames);
+    }),
+  });
+  
+      members: list.map(item => factory.PropertySignature.create({
+      name: item.convertedParams.escapedOperationId,
+      optional: false,
+      type: factory.TypeNode.create({})  
+  */
+
+  const createResponsesTypeAlias = (factory: TsGenerator.Factory.Type, errorResponseNames: string[]) => {
+    if (errorResponseNames.length === 0) {
+      return ts.factory.createToken(ts.SyntaxKind.VoidKeyword);
+
+    }
+    return factory.UnionTypeNode.create({
+        typeNodes: errorResponseNames.map(name => {
+          return factory.TypeReferenceNode.create({
+            name,
+          });
+        }),
+      });
+  };
+
+  const generateParams = (factory: TsGenerator.Factory.Type, convertedParams: CodeGenerator.ConvertedParams) => {
+    const typeArguments: ts.TypeNode[] = [];
+    if (convertedParams.has2OrMoreRequestContentTypes) {
+      typeArguments.push(
+        factory.UnionTypeNode.create({
+          typeNodes: convertedParams.requestContentTypes.map( value => 
+            factory.LiteralTypeNode.create({value})
+          )
+        })
+      )
+      //typeArguments.push(
+      //  factory.TypeReferenceNode.create({
+      //    name: "RequestContentType",
+      //  }),
+      //);
+    }
+    if (convertedParams.has2OrMoreSuccessResponseContentTypes) {
+      typeArguments.push(
+        factory.TypeReferenceNode.create({
+          name: "ResponseContentType",
+        }),
+      );
+    }
+    return factory.TypeReferenceNode.create({
+        name: convertedParams.argumentParamsTypeDeclaration,
+        typeArguments,
+    });
+  };
+
+  const ParameterAndResponse = factory.TypeAliasDeclaration.create({
+    export: true,
+    name: "ParametersAndResponse",
+    type: factory.TypeLiteralNode.create({
+      members: list.map(item => factory.PropertySignature.create({
+        name: item.convertedParams.escapedOperationId,
+        optional: false,
+        type: factory.TypeLiteralNode.create({
+          members: [
+            factory.PropertySignature.create({
+              name: 'parameters',
+              optional: false,
+              type: generateParams(factory, item.convertedParams)
+            }),
+            factory.PropertySignature.create({
+              name: 'response',
+              optional: false,
+              type: createResponsesTypeAlias(factory,item.convertedParams.responseSuccessNames)   
+            }),
+          ]
+        })
+      })
+      )
+    })
+  })
+
   const returnType = option.sync
     ? factory.TypeReferenceNode.create({
         name: "T",
@@ -201,6 +307,7 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
     createObjectLikeInterface(factory),
     ...createQueryParamsDeclarations(factory),
     createSuccessResponseTypeAlias("SuccessResponses", factory, successResponseNames),
+    ParameterAndResponse,
     errorResponseNamespace,
     factory.InterfaceDeclaration.create({
       export: true,
