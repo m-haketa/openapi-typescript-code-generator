@@ -201,30 +201,59 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
       type: factory.TypeNode.create({})  
   */
 
-  const createResponsesTypeAlias = (factory: TsGenerator.Factory.Type, errorResponseNames: string[]) => {
-    if (errorResponseNames.length === 0) {
+  const createResponsesTypeAlias = (factory: TsGenerator.Factory.Type, responseNames: string[]) => {
+    if (responseNames.length === 0) {
       return ts.factory.createToken(ts.SyntaxKind.VoidKeyword);
-
     }
-    return factory.UnionTypeNode.create({
-        typeNodes: errorResponseNames.map(name => {
-          return factory.TypeReferenceNode.create({
-            name,
-          });
+
+    const union = factory.UnionTypeNode.create({
+        typeNodes: responseNames.map(name => {
+          return factory.IndexedAccessTypeNode.create({
+            objectType: factory.TypeReferenceNode.create({
+              name,
+            }),
+            indexType: factory.TypeOperatorNode.create({
+              syntaxKind: "keyof",
+              type: factory.TypeReferenceNode.create({
+                name,
+              }),
+            }) 
+          }
+          )
         }),
       });
+
+    return union;
   };
 
   const generateParams = (factory: TsGenerator.Factory.Type, convertedParams: CodeGenerator.ConvertedParams) => {
+    const hasParamsArguments =
+    convertedParams.hasParameter ||
+    convertedParams.hasRequestBody ||
+    convertedParams.has2OrMoreSuccessResponseContentTypes ||
+    convertedParams.has2OrMoreRequestContentTypes;
+
+    if (!hasParamsArguments) {
+      return ts.factory.createToken(ts.SyntaxKind.VoidKeyword);
+    }
+
     const typeArguments: ts.TypeNode[] = [];
     if (convertedParams.has2OrMoreRequestContentTypes) {
-      typeArguments.push(
-        factory.UnionTypeNode.create({
-          typeNodes: convertedParams.requestContentTypes.map( value => 
-            factory.LiteralTypeNode.create({value})
-          )
-        })
-      )
+      if (convertedParams.requestContentTypes.includes('application/json') ) {
+        typeArguments.push(
+          factory.LiteralTypeNode.create({
+            value: "application/json",
+          }),
+        );
+      }
+
+      //typeArguments.push(
+      //  factory.UnionTypeNode.create({
+      //    typeNodes: convertedParams.requestContentTypes.map( value => 
+      //      factory.LiteralTypeNode.create({value})
+      //    )
+      //  })
+
       //typeArguments.push(
       //  factory.TypeReferenceNode.create({
       //    name: "RequestContentType",
@@ -233,10 +262,18 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
     }
     if (convertedParams.has2OrMoreSuccessResponseContentTypes) {
       typeArguments.push(
-        factory.TypeReferenceNode.create({
-          name: "ResponseContentType",
-        }),
+        factory.UnionTypeNode.create({
+          typeNodes: convertedParams.successResponseContentTypes.map( value => 
+            factory.LiteralTypeNode.create({value})
+          )
+        })
       );
+
+      //typeArguments.push(
+      //  factory.TypeReferenceNode.create({
+      //    name: "ResponseContentType",
+      //  }),
+      //);
     }
     return factory.TypeReferenceNode.create({
         name: convertedParams.argumentParamsTypeDeclaration,
