@@ -16,7 +16,10 @@ const main = () => {
   const apiClientCode = codeGenerator.generateCode([
     {
       generator: () => {
-        return [`import { Schemas } from "./types";`];
+        return [
+          `import { Schemas } from "./types";`,
+          `type GetParameters<T> = (T extends {parameter: unknown} ? T['parameter'] : {}) &
+                         (T extends {requestBody: unknown} ? T['requestBody'] : {});`];
       },
     },
     codeGenerator.getAdditionalTypeDefinitionCustomCodeGenerator(),

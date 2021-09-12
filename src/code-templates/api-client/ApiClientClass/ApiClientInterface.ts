@@ -237,7 +237,10 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
       typeArguments,
     });
 
-    return paramType;
+    return factory.TypeReferenceNode.create({
+      name: 'GetParameters',
+      typeArguments: [paramType],
+    });
   };
 
   const responseContentTypes = (factory: TsGenerator.Factory.Type, convertedParams: CodeGenerator.ConvertedParams) => {
