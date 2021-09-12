@@ -2,6 +2,18 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "type": "pwa-node",
+      "request": "launch",
+      "name": "debug",
+      "skipFiles": ["<node_internals>/**"],
+      "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+      "args": ["${workspaceFolder}\\entrypoint\\main.ts", "--transpile-only"],
+      "env": {
+        "TS_NODE_PROJECT": "${workspaceFolder}\\tsconfig.json"
+      },
+      "stopOnEntry": true
+    },
+    {
       "name": "test:code:gen",
       "type": "node",
       "request": "launch",
