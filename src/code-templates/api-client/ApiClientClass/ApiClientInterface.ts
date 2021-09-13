@@ -178,6 +178,19 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
       optional: false,
       type: factory.TypeNode.create({})  
   */
+  const Name_KeyofName =  (factory: TsGenerator.Factory.Type, name: string) => 
+  factory.IndexedAccessTypeNode.create({
+    objectType: factory.TypeReferenceNode.create({
+      name,
+    }),
+    indexType: factory.TypeOperatorNode.create({
+      syntaxKind: "keyof",
+      type: factory.TypeReferenceNode.create({
+        name,
+      }),
+    }),
+  });
+
 
   const responseType = (factory: TsGenerator.Factory.Type, responseNames: string[]) => {
     if (responseNames.length === 0) {
@@ -185,19 +198,7 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
     }
 
     const union = factory.UnionTypeNode.create({
-      typeNodes: responseNames.map(name => {
-        return factory.IndexedAccessTypeNode.create({
-          objectType: factory.TypeReferenceNode.create({
-            name,
-          }),
-          indexType: factory.TypeOperatorNode.create({
-            syntaxKind: "keyof",
-            type: factory.TypeReferenceNode.create({
-              name,
-            }),
-          }),
-        });
-      }),
+      typeNodes: responseNames.map(name => Name_KeyofName(factory,name)),
     });
 
     return union;
@@ -254,6 +255,24 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
     });
   };
 
+  const errorResponseType = (factory: TsGenerator.Factory.Type, errorResponseNames: string[]) => {
+    if (errorResponseNames.length === 0) {
+      return ts.factory.createToken(ts.SyntaxKind.VoidKeyword);
+    }
+
+    return factory.TypeLiteralNode.create({
+        members: errorResponseNames.map(name => {
+            const nameSplitted = name.split('$');
+            return factory.PropertySignature.create({
+              name: nameSplitted[nameSplitted.length - 1],
+              optional: false,
+              type: Name_KeyofName(factory, name)
+            })
+          }
+        )
+      });
+  };
+
   const parametersAndResponseNode = (item: CodeGenerator.Params) =>
     factory.PropertySignature.create({
       name: item.convertedParams.escapedOperationId,
@@ -270,6 +289,11 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
             optional: false,
             type: responseType(factory, item.convertedParams.responseSuccessNames),
           }),
+          //factory.PropertySignature.create({
+          //  name: "errorResponse",
+          //  optional: false,
+          //  type: errorResponseType(factory, item.convertedParams.responseErrorNames),
+          //}),
           factory.PropertySignature.create({
             name: "method",
             optional: false,
