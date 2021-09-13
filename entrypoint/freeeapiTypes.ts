@@ -24,38 +24,35 @@ type Response<M extends Methods, U extends Uris> =
 type ResponseContentType<M extends Methods, U extends Uris> =
   FilterByMethodAndUri<M, U>[keyof PR]['responseContentTypes'];
 
-/**
- *
- *
- * @template M extends Methods
- * @param {M} method
- */
-const freeeApi = <M extends Methods>(method: M) => ({
-/**
- *
- *
- * @template U extends Uris<M>
- * @param {U} uri
- */
-  requestUri: <U extends MethodUris<M>>(uri: U) => {
-    //できれば、contentTypeを飛ばしたいが、型情報だけだと無理か。
-    const responseContentTypes = 
-      <C extends ResponseContentType<M, U>>
-      (contentType: C) => ({
-        parameters: 
-          <P extends Params<M, U>, 
-           R extends Response<M, U>,
-          >(params: P): R => {
-            return {} as any;
-          }
-      });
-    
-    return { responseContentTypes }; 
-  }
-})
+const freeeApi = () => ({
+  /**
+   *
+   *
+   * @template M extends Methods
+   * @param {M} method
+   */
+  method: <M extends Methods>(method: M) => ({
+    /**
+     *
+     *
+     * @template U extends Uris<M>
+     * @param {U} uri
+     */
+    requestUri: <U extends MethodUris<M>>(uri: U) => ({
+      //できれば、contentTypeを飛ばしたいが、型情報だけだと無理か。
+      responseContentTypes: <C extends ResponseContentType<M, U>>(contentType: C) => ({
+  
+        parameters: <P extends Params<M, U>>(params: P) => ({
+          fetch: <R extends Response<M, U>>(): R => ({}) as any
+        })
+      })
+    })
+  })
+});
 
 const res = 
-  freeeApi('get').
+  freeeApi().
+  method('get').
   requestUri('/api/1/account_items').
   responseContentTypes('application/json').
   parameters({
@@ -64,7 +61,8 @@ const res =
 
 
 const res2 = 
-  freeeApi('get').
+  freeeApi().
+  method('get').
   requestUri('/api/1/companies/{id}').
   responseContentTypes('application/json').
   parameters({
@@ -73,7 +71,8 @@ const res2 =
   });
 
 const res3 = 
-  freeeApi('get').
+  freeeApi().
+  method('get').
   requestUri('/api/1/receipts/{id}/download').
   responseContentTypes('application/pdf').
   parameters({
