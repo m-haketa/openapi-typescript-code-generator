@@ -55,3 +55,12 @@ const res =
   parameters({
     company_id: 1,
   });
+
+
+const res2 = 
+  freeeApi('get').
+  requestUri('/api/1/companies/{id}').
+  parameters({
+    id: 123,
+    account_items: true,
+  });
