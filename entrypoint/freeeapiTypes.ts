@@ -3,7 +3,7 @@ import { ParametersAndResponse as PR} from './__generated__/apiClient';
 type Methods = PR[keyof PR]['method'];
 type Uris = PR[keyof PR]['requestUri'];
 
-type FilterByMethodAndUri<M, U> = {
+type FilterByMethodAndUri<M extends Methods, U extends Uris> = {
   [K in keyof PR]: 
     PR[K]['method'] extends M 
     ? PR[K]['requestUri'] extends U 
@@ -13,7 +13,7 @@ type FilterByMethodAndUri<M, U> = {
 }
 
 type MethodUris<M extends Methods> = 
-  FilterByMethodAndUri<M, string>[keyof PR]['requestUri'];
+  FilterByMethodAndUri<M, Uris>[keyof PR]['requestUri'];
 
 type Params<M extends Methods, U extends Uris> = 
   FilterByMethodAndUri<M, U>[keyof PR]['parameters'];
