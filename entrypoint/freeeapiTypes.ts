@@ -1,30 +1,25 @@
 import { ParametersAndResponse as PR} from './__generated__/apiClient';
 
 type Methods = PR[keyof PR]['method'];
+type Uris = PR[keyof PR]['requestUri'];
 
-type Uris<M extends Methods> = {
-  [K in keyof PR]: PR[K]['method'] extends M ? PR[K]['requestUri'] : never;
-}[keyof PR]
-
-type Params<M extends Methods, U extends Uris<M>> = {
+type FilterByMethodAndUri<M, U> = {
   [K in keyof PR]: 
-    PR[K]['requestUri'] extends U
-    ? PR[K]['method'] extends M 
-      ? PR[K]['parameters']   
+    PR[K]['method'] extends M 
+    ? PR[K]['requestUri'] extends U 
+      ? PR[K]
       : never
-    : never;
-}[keyof PR]
+    : never;  
+}
 
-type Response<M extends Methods, U extends Uris<M>> = {
-  [K in keyof PR]: 
-    PR[K]['requestUri'] extends U
-    ? PR[K]['method'] extends M 
-      ? PR[K]['response']   
-      : never
-    : never;
-}[keyof PR]
+type MethodUris<M extends Methods> = 
+  FilterByMethodAndUri<M, string>[keyof PR]['requestUri'];
 
-type PS = Params<'get','/api/1/account_items'>;
+type Params<M extends Methods, U extends Uris> = 
+  FilterByMethodAndUri<M, U>[keyof PR]['parameters'];
+
+type Response<M extends Methods, U extends Uris> =
+  FilterByMethodAndUri<M, U>[keyof PR]['response'];
 
 /**
  *
@@ -39,7 +34,7 @@ const freeeApi = <M extends Methods>(method: M) => ({
  * @template U extends Uris<M>
  * @param {U} uri
  */
-  requestUri: <U extends Uris<M>>(uri: U) => ({
+  requestUri: <U extends MethodUris<M>>(uri: U) => ({
    /**
     *
     *
