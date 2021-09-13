@@ -1,56 +1,66 @@
-import { ParametersAndResponse as PR} from './__generated__/apiClient';
+import { ParametersAndResponse } from './__generated__/apiClient';
 
-type Methods = PR[keyof PR]['method'];
-type Uris = PR[keyof PR]['requestUri'];
+type ApiType = {
+  [key: string]: {
+    parameters: Record<string, any> | void;
+    response: Record<string, any> | string | void;
+    method: 'get' | 'put' | 'post' | 'delete';
+    requestUri: string;
+    responseContentTypes: string | void;
+  }
+}
 
-type FilterByMethodAndUri<M extends Methods, U extends Uris> = {
-  [K in keyof PR]: 
-    PR[K]['method'] extends M 
-    ? PR[K]['requestUri'] extends U 
-      ? PR[K]
+type Methods<T extends ApiType> = T[keyof T]['method'];
+type Uris<T extends ApiType> = T[keyof T]['requestUri'];
+
+type FilterByMethodAndUri<T extends ApiType, M extends Methods<T>, U extends Uris<T>> = {
+  [K in keyof T]: 
+    T[K]['method'] extends M 
+    ? T[K]['requestUri'] extends U 
+      ? T[K]
       : never
     : never;  
 }
 
-type MethodUris<M extends Methods> = 
-  FilterByMethodAndUri<M, Uris>[keyof PR]['requestUri'];
+type MethodUris<T extends ApiType, M extends Methods<T>> = 
+  FilterByMethodAndUri<T, M, Uris<T>>[keyof T]['requestUri'];
 
-type Params<M extends Methods, U extends Uris> = 
-  FilterByMethodAndUri<M, U>[keyof PR]['parameters'];
+type Params<T extends ApiType, M extends Methods<T>, U extends Uris<T>> = 
+  FilterByMethodAndUri<T, M, U>[keyof T]['parameters'];
 
-type Response<M extends Methods, U extends Uris> =
-  FilterByMethodAndUri<M, U>[keyof PR]['response'];
+type Response<T extends ApiType, M extends Methods<T>, U extends Uris<T>> =
+  FilterByMethodAndUri<T, M, U>[keyof T]['response'];
 
-type ResponseContentType<M extends Methods, U extends Uris> =
-  FilterByMethodAndUri<M, U>[keyof PR]['responseContentTypes'];
+type ResponseContentType<T extends ApiType, M extends Methods<T>, U extends Uris<T>> =
+  FilterByMethodAndUri<T, M, U>[keyof T]['responseContentTypes'];
 
-const api = () => ({
+const api = <T extends ApiType>() => ({
   /**
    *
    *
    * @template M extends Methods
    * @param {M} method
    */
-  method: <M extends Methods>(method: M) => ({
+  method: <M extends Methods<T>>(method: M) => ({
     /**
      *
      *
      * @template U extends Uris<M>
      * @param {U} uri
      */
-    requestUri: <U extends MethodUris<M>>(uri: U) => ({
+    requestUri: <U extends MethodUris<T, M>>(uri: U) => ({
       //できれば、contentTypeを飛ばしたいが、型情報だけだと無理か。
-      responseContentTypes: <C extends ResponseContentType<M, U>>(contentType: C) => ({
+      responseContentTypes: <C extends ResponseContentType<T, M, U>>(contentType: C) => ({
   
-        parameters: <P extends Params<M, U>>(params: P) => ({
-          fetch: <R extends Response<M, U>>(): R => ({}) as any
+        parameters: <P extends Params<T, M, U>>(params: P) => ({
+          fetch: <R extends Response<T, M, U>>(): R => ({}) as any
         })
       })
     })
   })
 });
 
-const freeeApi = api();
+const freeeApi = api<ParametersAndResponse>();
 
 const res = 
   freeeApi.
@@ -59,7 +69,8 @@ const res =
   responseContentTypes('application/json').
   parameters({
     company_id: 1,
-  });
+  }).
+  fetch();
 
 
 const res2 = 
@@ -70,7 +81,8 @@ const res2 =
   parameters({
     id: 123,
     account_items: true,
-  });
+  }).
+  fetch();
 
 const res3 = 
   freeeApi.
@@ -80,5 +92,6 @@ const res3 =
   parameters({
     company_id: 1,
     id: 1,
-  });
+  }).
+  fetch();
 
