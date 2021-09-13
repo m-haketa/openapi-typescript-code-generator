@@ -212,7 +212,7 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
       convertedParams.has2OrMoreRequestContentTypes;
 
     if (!hasParamsArguments) {
-      return ts.factory.createToken(ts.SyntaxKind.VoidKeyword);
+      return ts.factory.createToken(ts.SyntaxKind.UndefinedKeyword);
     }
 
     const typeArguments: ts.TypeNode[] = [];
