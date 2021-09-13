@@ -24,7 +24,7 @@ type Response<M extends Methods, U extends Uris> =
 type ResponseContentType<M extends Methods, U extends Uris> =
   FilterByMethodAndUri<M, U>[keyof PR]['responseContentTypes'];
 
-const freeeApi = () => ({
+const api = () => ({
   /**
    *
    *
@@ -50,8 +50,10 @@ const freeeApi = () => ({
   })
 });
 
+const freeeApi = api();
+
 const res = 
-  freeeApi().
+  freeeApi.
   method('get').
   requestUri('/api/1/account_items').
   responseContentTypes('application/json').
@@ -61,7 +63,7 @@ const res =
 
 
 const res2 = 
-  freeeApi().
+  freeeApi.
   method('get').
   requestUri('/api/1/companies/{id}').
   responseContentTypes('application/json').
@@ -71,7 +73,7 @@ const res2 =
   });
 
 const res3 = 
-  freeeApi().
+  freeeApi.
   method('get').
   requestUri('/api/1/receipts/{id}/download').
   responseContentTypes('application/pdf').
