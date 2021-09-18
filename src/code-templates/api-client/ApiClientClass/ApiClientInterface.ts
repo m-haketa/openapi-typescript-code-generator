@@ -192,13 +192,26 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
   });
 
 
-  const responseType = (factory: TsGenerator.Factory.Type, responseNames: string[]) => {
-    if (responseNames.length === 0) {
-      return ts.factory.createToken(ts.SyntaxKind.VoidKeyword);
+  const responseType = (factory: TsGenerator.Factory.Type, convertedParams: CodeGenerator.ConvertedParams) => {
+    if (convertedParams.responseSuccessNames.length === 0) {
+      return ts.factory.createToken(ts.SyntaxKind.NeverKeyword);  
+    }
+    
+    if (!convertedParams.successResponseContentTypes.includes('application/json')) {
+      return ts.factory.createToken(ts.SyntaxKind.NeverKeyword);  
     }
 
     const union = factory.UnionTypeNode.create({
-      typeNodes: responseNames.map(name => Name_KeyofName(factory,name)),
+      typeNodes: convertedParams.responseSuccessNames.map(name => 
+        factory.IndexedAccessTypeNode.create({
+          objectType: factory.TypeReferenceNode.create({
+            name,
+          }),
+          indexType: factory.TypeReferenceNode.create({
+            name: `"application/json"`,
+          }),
+        })
+      ),
     });
 
     return union;
@@ -246,7 +259,7 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
 
   const responseContentTypes = (factory: TsGenerator.Factory.Type, convertedParams: CodeGenerator.ConvertedParams) => {
     if (convertedParams.successResponseContentTypes.length === 0) {
-      return ts.factory.createToken(ts.SyntaxKind.VoidKeyword);
+      return ts.factory.createToken(ts.SyntaxKind.UndefinedKeyword);
       //return factory.LiteralTypeNode.create({value : ""});
     }
 
@@ -287,7 +300,7 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
           factory.PropertySignature.create({
             name: "response",
             optional: false,
-            type: responseType(factory, item.convertedParams.responseSuccessNames),
+            type: responseType(factory, item.convertedParams),
           }),
           //factory.PropertySignature.create({
           //  name: "errorResponse",
