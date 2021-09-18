@@ -198,7 +198,9 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
     }
     
     const union = factory.UnionTypeNode.create({
-      typeNodes: convertedParams.responseSuccessNames.map(name => Name_KeyofName(factory,name)),
+      typeNodes: convertedParams.responseSuccessNames.map(name => factory.TypeReferenceNode.create({
+        name,
+      })),
     });
 
     return union;
