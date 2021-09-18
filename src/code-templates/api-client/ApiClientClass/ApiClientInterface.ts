@@ -197,21 +197,8 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
       return ts.factory.createToken(ts.SyntaxKind.NeverKeyword);  
     }
     
-    if (!convertedParams.successResponseContentTypes.includes('application/json')) {
-      return ts.factory.createToken(ts.SyntaxKind.NeverKeyword);  
-    }
-
     const union = factory.UnionTypeNode.create({
-      typeNodes: convertedParams.responseSuccessNames.map(name => 
-        factory.IndexedAccessTypeNode.create({
-          objectType: factory.TypeReferenceNode.create({
-            name,
-          }),
-          indexType: factory.TypeReferenceNode.create({
-            name: `"application/json"`,
-          }),
-        })
-      ),
+      typeNodes: convertedParams.responseSuccessNames.map(name => Name_KeyofName(factory,name)),
     });
 
     return union;
