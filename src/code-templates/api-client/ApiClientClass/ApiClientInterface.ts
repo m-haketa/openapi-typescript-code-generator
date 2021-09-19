@@ -227,6 +227,8 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
         );
       }
     }
+
+    //response typeが複数ある場合は型変数が必要になる
     if (convertedParams.has2OrMoreSuccessResponseContentTypes) {
       typeArguments.push(
         factory.UnionTypeNode.create({
@@ -244,6 +246,21 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
       name: 'GetParameters',
       typeArguments: [paramType],
     });
+  };
+
+  
+  const parameterContentType = (factory: TsGenerator.Factory.Type, convertedParams: CodeGenerator.ConvertedParams) => {
+    if (convertedParams.requestContentTypes.includes("application/json")) {
+      return factory.LiteralTypeNode.create({
+        value: "application/json",
+      });
+    } else if (convertedParams.requestContentTypes.includes("multipart/form-data")) {
+      return factory.LiteralTypeNode.create({
+        value: "multipart/form-data",
+      });
+    }
+
+    return ts.factory.createToken(ts.SyntaxKind.UndefinedKeyword);
   };
 
   const responseContentTypes = (factory: TsGenerator.Factory.Type, convertedParams: CodeGenerator.ConvertedParams) => {
@@ -309,6 +326,11 @@ export const create = (factory: TsGenerator.Factory.Type, list: CodeGenerator.Pa
             type: factory.LiteralTypeNode.create({
               value: item.operationParams.requestUri,
             }),
+          }),
+          factory.PropertySignature.create({
+            name: "parameterContentType",
+            optional: false,
+            type: parameterContentType(factory, item.convertedParams),
           }),
           factory.PropertySignature.create({
             name: "responseContentTypes",
