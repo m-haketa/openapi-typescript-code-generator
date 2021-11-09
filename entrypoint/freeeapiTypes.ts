@@ -25,7 +25,7 @@ type FilterByMethodAndUri<T extends ApiType, M extends Methods<T>, U extends Uri
 type MethodUris<T extends ApiType, M extends Methods<T>> = 
   FilterByMethodAndUri<T, M, Uris<T>>[keyof T]['requestUri'];
 
-type Params<T extends ApiType, M extends Methods<T>, U extends Uris<T>> = 
+type Parameters<T extends ApiType, M extends Methods<T>, U extends Uris<T>> = 
   FilterByMethodAndUri<T, M, U>[keyof T]['parameters'];
 
 type Response<T extends ApiType, M extends Methods<T>, U extends Uris<T>> =
@@ -52,7 +52,7 @@ const api = <T extends ApiType>() => ({
       //できれば、contentTypeを飛ばしたいが、型情報だけだと無理か。
       responseContentTypes: <C extends ResponseContentType<T, M, U>>(contentType: C) => ({
   
-        parameters: <P extends Params<T, M, U>>(params: P) => ({
+        parameters: <P extends Parameters<T, M, U>>(parameters: P) => ({
           fetch: <R extends Response<T, M, U>>(): R => ({}) as any
         })
       })
