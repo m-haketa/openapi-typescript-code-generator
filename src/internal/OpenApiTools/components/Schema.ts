@@ -1,4 +1,4 @@
-import ts from "typescript";
+import ts, { skipPartiallyEmittedExpressions } from "typescript";
 
 import type { OpenApi } from "../../../types";
 import { FeatureDevelopmentError } from "../../Exception";
@@ -6,7 +6,7 @@ import { Factory } from "../../TsGenerator";
 import * as ConvertContext from "../ConverterContext";
 import * as Guard from "../Guard";
 import * as ToTypeNode from "../toTypeNode";
-import type { ArraySchema, ObjectSchema, PrimitiveSchema } from "../types";
+import type { AnySchema, ArraySchema, ObjectSchema, PrimitiveSchema } from "../types";
 import type * as Walker from "../Walker";
 import * as ExternalDocumentation from "./ExternalDocumentation";
 
@@ -91,16 +91,54 @@ export const generateArrayTypeAlias = (
   });
 };
 
+const createNullableTypeNodeOrAny = (factory: Factory.Type, schema: OpenApi.Schema) => {
+  const typeNode = factory.TypeNode.create({
+    type: "any",
+  });
+  if (!schema.type && typeof schema.nullable === "boolean") {
+    return factory.TypeNode.create({
+      type: "null",
+    });
+  }
+  return typeNode;
+};
+
+/**
+ * 型定義が特定できなかった場合に利用する
+ */
+export const generateNotInferedTypeAlias = (
+  entryPoint: string,
+  currentPoint: string,
+  factory: Factory.Type,
+  name: string,
+  schema: OpenApi.Schema,
+  convertContext: ConvertContext.Types,
+) => {
+  const typeNode = createNullableTypeNodeOrAny(factory, schema);
+  return factory.TypeAliasDeclaration.create({
+    export: true,
+    name: convertContext.escapeDeclarationText(name),
+    type: typeNode,
+    comment: schema.description,
+  });
+};
+
 export const generateTypeAlias = (
   entryPoint: string,
   currentPoint: string,
   factory: Factory.Type,
   name: string,
-  schema: PrimitiveSchema,
+  schema: PrimitiveSchema | AnySchema,
   convertContext: ConvertContext.Types,
 ): ts.TypeAliasDeclaration => {
   let type: ts.TypeNode;
-  if (schema.enum) {
+  let formatTypeNode: ts.TypeNode | undefined;
+  if (schema.format && schema.type !== "any") {
+    formatTypeNode = convertContext.convertFormatTypeNode(schema);
+  }
+  if (formatTypeNode) {
+    type = formatTypeNode;
+  } else if (schema.enum) {
     if (Guard.isNumberArray(schema.enum) && (schema.type === "number" || schema.type === "integer")) {
       type = factory.TypeNode.create({
         type: schema.type,

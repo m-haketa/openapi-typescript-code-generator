@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+<a name="0.12.0"></a>
+# 0.12.0 (2021-11-09)
+
+
+### Features
+
+* Support for schema containing format ([#63](https://github.com/Himenon/openapi-typescript-code-generator/issues/63)) ([24c7bd2](https://github.com/Himenon/openapi-typescript-code-generator/commit/24c7bd2))
+
+
+
+
+
+<a name="0.11.0"></a>
+# 0.11.0 (2021-11-07)
+
+
+### Features
+
+* Support Kubernetes OpenAPI Schema ([#62](https://github.com/Himenon/openapi-typescript-code-generator/issues/62)) ([3e5f4ef](https://github.com/Himenon/openapi-typescript-code-generator/commit/3e5f4ef))
+
+
+
+
+
+<a name="0.10.1"></a>
+## 0.10.1 (2021-10-26)
+
+**Note:** Version bump only for package @himenon/openapi-typescript-code-generator
+
+
+
+
+
 <a name="0.10.0"></a>
 # 0.10.0 (2021-09-12)
 

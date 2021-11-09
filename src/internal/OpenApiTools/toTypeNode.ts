@@ -124,13 +124,25 @@ export const convert: Convert = (
   }
 
   if (Guard.isOneOfSchema(schema)) {
-    return generateMultiTypeNode(entryPoint, currentPoint, factory, schema.oneOf, context, convert, converterContext, "oneOf");
+    return nullable(
+      factory,
+      generateMultiTypeNode(entryPoint, currentPoint, factory, schema.oneOf, context, convert, converterContext, "oneOf"),
+      !!schema.nullable,
+    );
   }
   if (Guard.isAllOfSchema(schema)) {
-    return generateMultiTypeNode(entryPoint, currentPoint, factory, schema.allOf, context, convert, converterContext, "allOf");
+    return nullable(
+      factory,
+      generateMultiTypeNode(entryPoint, currentPoint, factory, schema.allOf, context, convert, converterContext, "allOf"),
+      !!schema.nullable,
+    );
   }
   if (Guard.isAnyOfSchema(schema)) {
-    return generateMultiTypeNode(entryPoint, currentPoint, factory, schema.anyOf, context, convert, converterContext, "anyOf");
+    return nullable(
+      factory,
+      generateMultiTypeNode(entryPoint, currentPoint, factory, schema.anyOf, context, convert, converterContext, "anyOf"),
+      !!schema.nullable,
+    );
   }
 
   if (Guard.isHasNoMembersObject(schema)) {
@@ -176,6 +188,10 @@ export const convert: Convert = (
     case "number": {
       const items = schema.enum;
       let typeNode: ts.TypeNode;
+      const formatTypeNode = converterContext.convertFormatTypeNode(schema);
+      if (formatTypeNode) {
+        return formatTypeNode;
+      }
       if (items && Guard.isNumberArray(items)) {
         typeNode = factory.TypeNode.create({
           type: schema.type,
@@ -190,6 +206,10 @@ export const convert: Convert = (
     }
     case "string": {
       const items = schema.enum;
+      const formatTypeNode = converterContext.convertFormatTypeNode(schema);
+      if (formatTypeNode) {
+        return formatTypeNode;
+      }
       let typeNode: ts.TypeNode;
       if (items && Guard.isStringArray(items)) {
         typeNode = factory.TypeNode.create({
